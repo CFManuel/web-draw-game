@@ -1,0 +1,1 @@
+const BACKEND_URL = "https://web-draw-game-backend.onrender.com"; // Cambia esto cuando tengas la URL definitiva
