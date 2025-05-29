@@ -23,4 +23,5 @@ jobs:
       - name: Deploy
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm run deploy
+        run: |
+          npx gh-pages -d build --repo=https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git
