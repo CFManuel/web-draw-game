@@ -1,45 +1,82 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Lobby from "./components/Lobby";
 import WaitRoom from "./components/WaitRoom";
 import DrawPhase from "./components/DrawPhase";
 import ClassifyPhase from "./components/ClassifyPhase";
 import ResultsPhase from "./components/ResultsPhase";
 
+// Utilidades de sala simulada
+function getRoomFromUrl() {
+  const m = window.location.hash.match(/^#room-([A-Z0-9]{5})$/);
+  return m ? m[1] : "";
+}
+
+function savePlayerToRoom(roomCode, player) {
+  const key = `room-${roomCode}-players`;
+  const players = JSON.parse(localStorage.getItem(key) || "[]");
+  if (!players.find((p) => p.name === player.name)) {
+    players.push(player);
+    localStorage.setItem(key, JSON.stringify(players));
+  }
+}
+
+function getPlayersInRoom(roomCode) {
+  const key = `room-${roomCode}-players`;
+  return JSON.parse(localStorage.getItem(key) || "[]");
+}
+
 export default function App() {
-  // Estados principales
   const [phase, setPhase] = useState("lobby"); // lobby | wait | draw | classify | results
-  const [roomCode, setRoomCode] = useState("");
-  const [players, setPlayers] = useState([]); // [{name, drawings, guesses, assignments}]
-  const [currentUser, setCurrentUser] = useState(""); // nombre
-  const [drawings, setDrawings] = useState([]); // [{player, dataUrl}]
-  const [classify, setClassify] = useState([]); // [{image, guesses: [{user, guess, assignedTo}]}]
+  const [roomCode, setRoomCode] = useState(getRoomFromUrl() || "");
+  const [players, setPlayers] = useState([]);
+  const [currentUser, setCurrentUser] = useState("");
+  const [drawings, setDrawings] = useState([]);
+  const [classify, setClassify] = useState([]);
+
+  // Sincronizar jugadores de la sala simulada
+  useEffect(() => {
+    if (roomCode) {
+      const interval = setInterval(() => {
+        setPlayers(getPlayersInRoom(roomCode));
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [roomCode]);
 
   // Lobby: unir/crear sala y poner nombre
   if (phase === "lobby") {
     return (
       <Lobby
         setPhase={setPhase}
-        setRoomCode={setRoomCode}
+        setRoomCode={(code) => {
+          setRoomCode(code);
+          window.location.hash = `room-${code}`;
+        }}
         setPlayers={setPlayers}
         setCurrentUser={setCurrentUser}
         players={players}
         roomCode={roomCode}
+        onJoinRoom={({ room, player }) => {
+          savePlayerToRoom(room, player);
+          setRoomCode(room);
+          setCurrentUser(player.name);
+          setPhase("wait");
+        }}
       />
     );
   }
 
-  // Espera: muestra jugadores y botón empezar (solo creador)
   if (phase === "wait") {
     return (
       <WaitRoom
         players={players}
         currentUser={currentUser}
         setPhase={setPhase}
+        roomCode={roomCode}
       />
     );
   }
 
-  // Fase dibujo
   if (phase === "draw") {
     return (
       <DrawPhase
@@ -52,7 +89,6 @@ export default function App() {
     );
   }
 
-  // Fase clasificar (drag & drop + input)
   if (phase === "classify") {
     return (
       <ClassifyPhase
@@ -66,14 +102,9 @@ export default function App() {
     );
   }
 
-  // Resultados
   if (phase === "results") {
     return (
-      <ResultsPhase
-        drawings={drawings}
-        classify={classify}
-        players={players}
-      />
+      <ResultsPhase drawings={drawings} classify={classify} players={players} />
     );
   }
 

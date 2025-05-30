@@ -11,6 +11,7 @@ export default function Lobby({
   setCurrentUser,
   players,
   roomCode,
+  onJoinRoom,
 }) {
   const [name, setName] = useState("");
   const [inputRoom, setInputRoom] = useState("");
@@ -20,14 +21,14 @@ export default function Lobby({
     setRoomCode(code);
     setPlayers([{ name, isOwner: true }]);
     setCurrentUser(name);
-    setPhase("wait");
+    onJoinRoom({ room: code, player: { name, isOwner: true } });
   };
 
   const handleJoin = () => {
     setRoomCode(inputRoom);
     setPlayers((prev) => [...prev, { name, isOwner: false }]);
     setCurrentUser(name);
-    setPhase("wait");
+    onJoinRoom({ room: inputRoom, player: { name, isOwner: false } });
   };
 
   return (
